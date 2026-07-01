@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        ============================================================
+        Access-rights selector for the holiday_allocation_date_app
+        ============================================================
+
+        This file defines a DEDICATED access-rights category and groups
+        so that Time Off calendar visibility can be granted from
+        Settings > Users & Companies > Users > (a user) > Access Rights.
+
+        The category name and every group name carry the
+        "holiday_allocation_date_app" tag so it is obvious in the admin
+        UI that the selector comes from THIS module (and not from Odoo
+        core or another app).
+
+        Because the three groups form a linear hierarchy
+        (own  ->  own + team  ->  everyone) via implied_ids, Odoo renders
+        them as a single SELECT / dropdown on the user's Access Rights
+        tab instead of separate checkboxes.
+
+        The record rules that actually enforce this visibility live in
+        security/hr_leave_calendar_security.xml and reference the groups
+        defined here.
+    -->
+
+    <record id="module_category_holiday_allocation_date_app" model="ir.module.category">
+        <field name="name">Time Off Calendar Visibility (holiday_allocation_date_app)</field>
+        <field name="description">Controls who can see other employees' time off on the Time Off calendar. Provided by the holiday_allocation_date_app module (technical name: oi_hr_holidays_allocation_date).</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- Tier 1: default for every internal user - own time off only -->
+    <record id="group_holiday_calendar_own" model="res.groups">
+        <field name="name">Own Time Off Only (holiday_allocation_date_app)</field>
+        <field name="category_id" ref="module_category_holiday_allocation_date_app"/>
+    </record>
+
+    <!-- Tier 2: own time off + the team they manage -->
+    <record id="group_holiday_calendar_team" model="res.groups">
+        <field name="name">Own + Team Time Off (holiday_allocation_date_app)</field>
+        <field name="category_id" ref="module_category_holiday_allocation_date_app"/>
+        <field name="implied_ids" eval="[(4, ref('group_holiday_calendar_own'))]"/>
+    </record>
+
+    <!-- Tier 3: everyone's time off -->
+    <record id="group_holiday_calendar_all" model="res.groups">
+        <field name="name">Everyone's Time Off (holiday_allocation_date_app)</field>
+        <field name="category_id" ref="module_category_holiday_allocation_date_app"/>
+        <field name="implied_ids" eval="[(4, ref('group_holiday_calendar_team'))]"/>
+    </record>
+
+    <!--
+        Default wiring so the module is safe out of the box:
+
+          * every internal user (base.group_user) gets "Own Time Off Only",
+            which is what keeps normal users from seeing each other's
+            calendars unless an admin raises their tier;
+          * existing Time Off roles map onto the higher tiers so behaviour
+            matches Odoo's standard Time Off access levels.
+
+        Admins can still override any single user by picking a different
+        value in the dropdown on that user's Access Rights tab.
+    -->
+    <record id="base.group_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_holiday_calendar_own'))]"/>
+    </record>
+
+    <record id="hr_holidays.group_hr_holidays_responsible" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_holiday_calendar_team'))]"/>
+    </record>
+
+    <record id="hr_holidays.group_hr_holidays_user" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_holiday_calendar_all'))]"/>
+    </record>
+
+</odoo>

@@ -8,30 +8,42 @@ It also adds a `get_leave_balance` method on `hr.employee` to fetch the leave ba
 
 By default in Odoo 17 the "Everyone's Time Off" calendar (the `hr.leave.report.calendar`
 model) ships with only a multi-company rule, so every employee can see everyone's time
-off on the calendar. This module adds record rules that make the calendar respect the
-**existing Time Off role dropdown** (Settings → Users → *Time Off* access level):
+off on the calendar. This module locks that down: **normal users can only see their own
+time off** and can never see each other's calendars unless an admin explicitly raises
+their access level.
 
-| Role (existing dropdown)      | Sees on the calendar  |
-|-------------------------------|-----------------------|
-| Member / User (`base.group_user`) | Their own time off only |
-| Team Approver (`group_hr_holidays_responsible`) | Their own + their team |
-| Officer (`group_hr_holidays_user`) | Everyone |
-| Administrator (`group_hr_holidays_manager`) | Everyone |
+### Dedicated access-rights selector
 
-This mirrors the per-employee privacy Odoo already enforces on the leave history and
-allocation list views, and introduces **no new security groups** — you switch a member's
-visibility simply by changing their Time Off role in the standard dropdown.
+The module adds its own access-rights category so you can control calendar visibility
+per user from **Settings → Users & Companies → Users → *(a user)* → Access Rights**. It
+is labelled **`Time Off Calendar Visibility (holiday_allocation_date_app)`** — the
+`holiday_allocation_date_app` tag on the category and every option makes it obvious the
+selector comes from this module. Because the options form a hierarchy, they show as a
+single **dropdown / select**:
 
-> To restrict *Officers* too (so that **only** Administrators see everyone), change the
-> domain of `hr_leave_report_calendar_rule_officer` in
-> `security/hr_leave_calendar_security.xml`.
+| Selector value (dropdown)                        | Sees on the calendar    |
+|--------------------------------------------------|-------------------------|
+| `Own Time Off Only (holiday_allocation_date_app)`   *(default for all users)* | Their own time off only |
+| `Own + Team Time Off (holiday_allocation_date_app)` | Their own + their team |
+| `Everyone's Time Off (holiday_allocation_date_app)` | Everyone |
+
+Every internal user is granted **Own Time Off Only** automatically, which is what keeps
+normal users from seeing each other's calendars. Odoo's existing Time Off roles are
+mapped onto the higher tiers out of the box (Team Approver → *Own + Team*, Officer /
+Administrator → *Everyone*), so behaviour matches the standard access levels — but an
+admin can override any single user straight from the dropdown.
+
+The three groups and the category are defined in a separate file,
+`security/hr_leave_calendar_groups.xml`; the record rules that enforce them live in
+`security/hr_leave_calendar_security.xml`.
 
 ## Details
 
 - **Technical name:** `oi_hr_holidays_allocation_date`
-- **Version:** 17.0.0.0.2
+- **Version:** 17.0.0.0.3
 - **Depends on:** `hr_holidays`
 - **Author:** Openinside
+- **Developer:** [Mohamed Amine Bentaieb](https://github.com/medaminebt/)
 - **License:** OPL-1
 
 ## Install
